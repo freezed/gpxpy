@@ -20,6 +20,41 @@ KM_TO_MILES = 0.621371
 M_TO_FEET = 3.28084
 
 
+def compute_gpx_summary(gpx_part: Union[mod_gpx.GPX, mod_gpx.GPXTrack, mod_gpx.GPXTrackSegment]) -> dict:
+    """
+    Compute GPX data in a dict()
+    gpx_part may be a track or segment.
+    """
+    gpx_summary = {
+        "length_2d": 0,
+        "length_3d": gpx_part.length_3d(),
+        "moving_data": gpx_part.get_moving_data(),
+        "points_no": len(list(gpx_part.walk(only_points=True))),
+        "points": len(list(gpx_part.walk())),
+        "uphill": gpx_part.get_uphill_downhill()[0],
+        "downhill": gpx_part.get_uphill_downhill()[1],
+        "start_time": gpx_part.get_time_bounds()[0],
+        "end_time": gpx_part.get_time_bounds()[1],
+        "distances": 0,
+    }
+
+    if gpx_summary["points_no"] > 0:
+        distances: List[float] = []
+        previous_point = None
+        for point in gpx_part.walk(only_points=True):
+            if previous_point:
+                distance = point.distance_2d(previous_point)
+                distances.append(distance)
+            previous_point = point
+
+        gpx_summary.update(distances=format_short_length(sum(distances) / gpx_summary["points"]))
+
+    if gpx_part.length_2d():
+        gpx_summary["length_2d"] = gpx_part.length_2d()
+
+    return gpx_summary
+
+
 def format_time(time_s: Optional[float]="") -> str:
     """
     Time formatter
@@ -104,8 +139,9 @@ def format_speed(speed: float) -> str:
         return '{:.2f}m/s = {:.2f}km/h'.format(speed, speed * 3600. / 1000.)
 
 
-def print_gpx_part_info(gpx_part: Union[mod_gpx.GPX, mod_gpx.GPXTrack, mod_gpx.GPXTrackSegment], indentation: str='    ') -> None:
+def print_gpx_part_info(gpx_summary: dict, indentation: str='    ') -> None:
     """
+    Print GPX info summary in console
     gpx_part may be a track or segment.
 
     >>> gpx = mod_gpxpy.parse(open("test_files/cerknicko-jezero.gpx"))
@@ -115,39 +151,24 @@ def print_gpx_part_info(gpx_part: Union[mod_gpx.GPX, mod_gpx.GPXTrack, mod_gpx.G
         Avg distance between points: 46.21m
     <BLANKLINE>
     """
-    length_2d = gpx_part.length_2d()
-    length_3d = gpx_part.length_3d()
-    print('%sLength 2D: %s' % (indentation, format_long_length(length_2d or 0)))
-    print('%sLength 3D: %s' % (indentation, format_long_length(length_3d)))
+    print('%sLength 2D: %s' % (indentation, format_long_length(gpx_summary["length_2d"])))
+    print('%sLength 3D: %s' % (indentation, format_long_length(gpx_summary["length_3d"])))
 
-    moving_data = gpx_part.get_moving_data()
-    if moving_data:
-        print('%sMoving time: %s' % (indentation, format_time(moving_data.moving_time)))
-        print('%sStopped time: %s' % (indentation, format_time(moving_data.stopped_time)))
+    if gpx_summary["moving_data"]:
+        print('%sMoving time: %s' % (indentation, format_time(gpx_summary["moving_data"].moving_time)))
+        print('%sStopped time: %s' % (indentation, format_time(gpx_summary["moving_data"].stopped_time)))
         #print('%sStopped distance: %s' % (indentation, format_short_length(stopped_distance)))
-        print('%sMax speed: %s' % (indentation, format_speed(moving_data.max_speed)))
-        print('%sAvg speed: %s' % (indentation, format_speed(moving_data.moving_distance / moving_data.moving_time) if moving_data.moving_time > 0 else "?"))
+        print('%sMax speed: %s' % (indentation, format_speed(gpx_summary["moving_data"].max_speed)))
+        print('%sAvg speed: %s' % (indentation, format_speed(gpx_summary["moving_data"].moving_distance / gpx_summary["moving_data"].moving_time) if gpx_summary["moving_data"].moving_time > 0 else "?"))
 
-    uphill, downhill = gpx_part.get_uphill_downhill()
-    print('%sTotal uphill: %s' % (indentation, format_short_length(uphill)))
-    print('%sTotal downhill: %s' % (indentation, format_short_length(downhill)))
+    print('%sTotal uphill: %s' % (indentation, format_short_length(gpx_summary["uphill"])))
+    print('%sTotal downhill: %s' % (indentation, format_short_length(gpx_summary["downhill"])))
+    print('%sStarted: %s' % (indentation, gpx_summary["start_time"]))
+    print('%sEnded: %s' % (indentation, gpx_summary["end_time"]))
+    print('%sPoints: %s' % (indentation, gpx_summary["points_no"]))
 
-    start_time, end_time = gpx_part.get_time_bounds()
-    print('%sStarted: %s' % (indentation, start_time))
-    print('%sEnded: %s' % (indentation, end_time))
-
-    points_no = len(list(gpx_part.walk(only_points=True)))
-    print('%sPoints: %s' % (indentation, points_no))
-
-    if points_no > 0:
-        distances: List[float] = []
-        previous_point = None
-        for point in gpx_part.walk(only_points=True):
-            if previous_point:
-                distance = point.distance_2d(previous_point)
-                distances.append(distance)
-            previous_point = point
-        print('%sAvg distance between points: %s' % (indentation, format_short_length(sum(distances) / len(list(gpx_part.walk())))))
+    if gpx_summary["distances"]:
+        print('%sAvg distance between points: %s' % (indentation, gpx_summary["distances"]))
 
     print('')
 
@@ -178,12 +199,12 @@ def print_gpx_info(gpx: mod_gpx.GPX, gpx_file: str) -> None:
     if gpx.author_email:
         print('  Email: %s' % gpx.author_email)
 
-    print_gpx_part_info(gpx)
+    print_gpx_part_info(compute_gpx_summary(gpx))
 
     for track_no, track in enumerate(gpx.tracks):
         for segment_no, segment in enumerate(track.segments):
             print('    Track #%s, Segment #%s' % (track_no, segment_no))
-            print_gpx_part_info(segment, indentation='        ')
+            print_gpx_part_info(compute_gpx_summary(segment), indentation='        ')
 
 
 def run(gpx_files: List[str]) -> None:
