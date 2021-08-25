@@ -46,7 +46,7 @@ def compute_gpx_summary(gpx_part: Union[mod_gpx.GPX, mod_gpx.GPXTrack, mod_gpx.G
                 distances.append(distance)
             previous_point = point
 
-    gpx_summary.update(distances=distances)
+    gpx_summary.update(distances=format_short_length(sum(distances) / gpx_summary["points"]))
 
     if gpx_part.length_2d():
         gpx_summary["length_2d"] = gpx_part.length_2d()
@@ -109,7 +109,7 @@ def print_gpx_part_info(gpx_summary: dict, indentation: str='    ') -> None:
     print('%sPoints: %s' % (indentation, gpx_summary["points_no"]))
 
     if gpx_summary["distances"]:
-        print('%sAvg distance between points: %s' % (indentation, format_short_length(sum(gpx_summary["distances"]) / gpx_summary["points"])))
+        print('%sAvg distance between points: %s' % (indentation, gpx_summary["distances"]))
 
     print('')
 
