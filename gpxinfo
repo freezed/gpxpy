@@ -35,6 +35,7 @@ def compute_gpx_summary(gpx_part: Union[mod_gpx.GPX, mod_gpx.GPXTrack, mod_gpx.G
         "downhill": gpx_part.get_uphill_downhill()[1],
         "start_time": gpx_part.get_time_bounds()[0],
         "end_time": gpx_part.get_time_bounds()[1],
+        "distances": 0,
     }
 
     if gpx_summary["points_no"] > 0:
@@ -46,7 +47,7 @@ def compute_gpx_summary(gpx_part: Union[mod_gpx.GPX, mod_gpx.GPXTrack, mod_gpx.G
                 distances.append(distance)
             previous_point = point
 
-    gpx_summary.update(distances=format_short_length(sum(distances) / gpx_summary["points"]))
+        gpx_summary.update(distances=format_short_length(sum(distances) / gpx_summary["points"]))
 
     if gpx_part.length_2d():
         gpx_summary["length_2d"] = gpx_part.length_2d()
