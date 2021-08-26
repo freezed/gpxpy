@@ -10,6 +10,7 @@ import sys as mod_sys
 import logging as mod_logging
 import math as mod_math
 import argparse as mod_argparse
+import json
 
 import gpxpy as mod_gpxpy
 import gpxpy.gpx as mod_gpx
@@ -173,6 +174,25 @@ def print_gpx_part_info(gpx_summary: dict, indentation: str='    ') -> None:
     print('')
 
 
+def json_gpx_info(gpx: mod_gpx.GPX, gpx_file: str) -> None:
+    response = list()
+
+    for track_no, track in enumerate(gpx.tracks):
+        for segment_no, segment in enumerate(track.segments):
+            meta = {
+                "file": gpx_file,
+                "track_num": track_no,
+                "segment_num": segment_no,
+            }
+
+            data = compute_gpx_summary(segment)
+            data["start_time"] = data["start_time"].isoformat()
+            data["end_time"] = data["end_time"].isoformat()
+
+        response.append({"meta": meta, "data": data,})
+
+    return json.dumps(response, indent=2, separators=(',', ':'))
+
 def print_gpx_info(gpx: mod_gpx.GPX, gpx_file: str) -> None:
     """
     >>> gpx_file = "test_files/cerknicko-jezero.gpx"
@@ -241,9 +261,29 @@ def run(gpx_files: List[str]) -> None:
             mod_sys.exit(1)
 
 
+def json_return(gpx_files: List[str]) -> None:
+    if not gpx_files:
+        print('No GPX files given')
+        mod_sys.exit(1)
+
+    response = list()
+
+    for gpx_file in gpx_files:
+        try:
+            gpx = mod_gpxpy.parse(open(gpx_file))
+            response.append(json_gpx_info(gpx, gpx_file))
+        except Exception as e:
+            mod_logging.exception(e)
+            print('Error processing %s' % gpx_file)
+            mod_sys.exit(1)
+
+    return response
+
 def make_parser() -> mod_argparse.ArgumentParser:
     parser = mod_argparse.ArgumentParser(usage='%(prog)s [-s] [-m] [-d] [file ...]',
         description='Command line utility to extract basic statistics from gpx file(s)')
+    parser.add_argument('-j', '--json', action='store_true',
+                        help='Returns summary as JSON object')
     parser.add_argument('-s', '--seconds', action='store_true',
                         help='print times as N seconds, rather than HH:MM:SS')
     parser.add_argument('-m', '--miles', action='store_true',
@@ -261,4 +301,10 @@ if __name__ == '__main__':
     if args.debug:
         mod_logging.basicConfig(level=mod_logging.DEBUG,
                                 format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-    run(gpx_files)
+
+    if args.json:
+        for info in json_return(gpx_files):
+            print(info)
+
+    else:
+        print_stdout(gpx_files)
