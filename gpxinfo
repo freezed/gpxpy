@@ -20,7 +20,24 @@ KM_TO_MILES = 0.621371
 M_TO_FEET = 3.28084
 
 
-def format_time(time_s: float) -> str:
+def format_time(time_s: Optional[float]="") -> str:
+    """
+    Time formatter
+
+        No time given:
+    >>> format_time()
+    'n/a'
+
+    Format "HH:MM:SS"
+    >>> format_time(4242.42)
+    '01:10:42'
+
+    Format "SS"
+    >>> args.seconds = True
+    >>> format_time(4242.42)
+    '4242'
+    """
+
     if not time_s:
         return 'n/a'
     elif args.seconds:
@@ -57,6 +74,14 @@ def format_speed(speed: float) -> str:
 def print_gpx_part_info(gpx_part: Union[mod_gpx.GPX, mod_gpx.GPXTrack, mod_gpx.GPXTrackSegment], indentation: str='    ') -> None:
     """
     gpx_part may be a track or segment.
+
+    >>> gpx = mod_gpxpy.parse(open("test_files/cerknicko-jezero.gpx"))
+    >>> print_gpx_part_info(gpx)
+        Length 2D: 4.580km
+        Length 3D: 4.692km
+        ...
+        Avg distance between points: 46.21m
+    <BLANKLINE>
     """
     length_2d = gpx_part.length_2d()
     length_3d = gpx_part.length_3d()
@@ -96,6 +121,19 @@ def print_gpx_part_info(gpx_part: Union[mod_gpx.GPX, mod_gpx.GPXTrack, mod_gpx.G
 
 
 def print_gpx_info(gpx: mod_gpx.GPX, gpx_file: str) -> None:
+    """
+    >>> gpx_file = "test_files/cerknicko-jezero.gpx"
+    >>> gpx_parser = mod_gpxpy.parse(open(gpx_file))
+    >>> print_gpx_info(gpx_parser, gpx_file) # doctest: +ELLIPSIS
+    File: test_files/cerknicko-jezero.gpx
+        ...
+        Track #0, Segment #0
+            ...
+        Track #7, Segment #0
+            ...
+    """
+
+
     print('File: %s' % gpx_file)
 
     if gpx.name:
@@ -143,6 +181,10 @@ def make_parser() -> mod_argparse.ArgumentParser:
 
 if __name__ == '__main__':
     args, gpx_files = make_parser().parse_known_args()
+
+    import doctest
+    doctest.testmod()
+
     if args.debug:
         mod_logging.basicConfig(level=mod_logging.DEBUG,
                                 format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
