@@ -24,7 +24,7 @@ def format_time(time_s: Optional[float]="") -> str:
     """
     Time formatter
 
-        No time given:
+    No time given:
     >>> format_time()
     'n/a'
 
@@ -49,6 +49,17 @@ def format_time(time_s: Optional[float]="") -> str:
 
 
 def format_long_length(length: float) -> str:
+    """
+    Long length formatter
+    >>> format_long_length(4242.42)
+    '4.242km'
+
+    In miles
+    >>> args.miles = True
+    >>> format_long_length(4242.42)
+    '2.636miles'
+    >>> args.miles = False
+    """
     if args.miles:
         return '{:.3f}miles'.format(length / 1000. * KM_TO_MILES)
     else:
@@ -56,6 +67,17 @@ def format_long_length(length: float) -> str:
 
 
 def format_short_length(length: float) -> str:
+    """
+    Short length formatter
+    >>> format_short_length(4242.42)
+    '4242.42m'
+
+    In miles
+    >>> args.miles = True
+    >>> format_short_length(4242.42)
+    '13918.70ft'
+    >>> args.miles = False
+    """
     if args.miles:
         return '{:.2f}ft'.format(length * M_TO_FEET)
     else:
@@ -63,6 +85,17 @@ def format_short_length(length: float) -> str:
 
 
 def format_speed(speed: float) -> str:
+    """
+    Speed formatter
+    >>> format_speed(4242.42)
+    '4242.42m/s = 15272.71km/h'
+
+    In miles
+    >>> args.miles = True
+    >>> format_speed(4242.42)
+    '9490.02mph'
+    >>> args.miles = False
+    """
     if not speed:
         speed = 0
     if args.miles:
@@ -76,10 +109,9 @@ def print_gpx_part_info(gpx_part: Union[mod_gpx.GPX, mod_gpx.GPXTrack, mod_gpx.G
     gpx_part may be a track or segment.
 
     >>> gpx = mod_gpxpy.parse(open("test_files/cerknicko-jezero.gpx"))
-    >>> print_gpx_part_info(gpx)
+    >>> print_gpx_part_info(gpx) # doctest: +ELLIPSIS
         Length 2D: 4.580km
-        Length 3D: 4.692km
-        ...
+    ...
         Avg distance between points: 46.21m
     <BLANKLINE>
     """
@@ -126,14 +158,15 @@ def print_gpx_info(gpx: mod_gpx.GPX, gpx_file: str) -> None:
     >>> gpx_parser = mod_gpxpy.parse(open(gpx_file))
     >>> print_gpx_info(gpx_parser, gpx_file) # doctest: +ELLIPSIS
     File: test_files/cerknicko-jezero.gpx
-        ...
+    ...
         Track #0, Segment #0
-            ...
+            Length 2D: 0.000km
+    ...
         Track #7, Segment #0
-            ...
+    ...
+            Avg distance between points: 16.52m
+    ...
     """
-
-
     print('File: %s' % gpx_file)
 
     if gpx.name:
@@ -154,6 +187,25 @@ def print_gpx_info(gpx: mod_gpx.GPX, gpx_file: str) -> None:
 
 
 def run(gpx_files: List[str]) -> None:
+    """
+    >>> gpx_files = ["test_files/cerknicko-jezero.gpx", "test_files/cerknicko-jezero-without-elevations.gpx"]
+    >>> run(gpx_files) # doctest: +ELLIPSIS
+    File: test_files/cerknicko-jezero.gpx
+    ...
+        Track #7, Segment #0
+    ...
+            Total uphill: 85.65m
+            Total downhill: 34.22m
+    ...
+    File: test_files/cerknicko-jezero-without-elevations.gpx
+    ...
+        Track #7, Segment #0
+    ...
+            Total uphill: 0.00m
+            Total downhill: 0.00m
+    ...
+    <BLANKLINE>
+    """
     if not gpx_files:
         print('No GPX files given')
         mod_sys.exit(1)
